@@ -9,22 +9,38 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // Tutorial selector
-    const tutono: usize = b.option(usize, "n", "Select tutorial") orelse 1;
+    const tutono: ?usize = b.option(usize, "n", "Select tutorial");
 
-    if (tutono == 0 or tutono > tutorials.len) {
-        print("unknown tutorial number: {}\n", .{tutono});
+    var tutorial_path: ?[]const u8 = null;
+    if (tutono) |n| {
+        if (n < 1 or n > tutorials.len) {
+            print("Unknown tutorial number: {}\n", .{n});
+            print("Available tutorials: 1 - {d}\n", .{tutorials.len});
+            std.os.exit(2);
+        }
+        const tuto = tutorials[n - 1];
+        tutorial_path = tuto.main_file;
+        print("Selected Tutorial {d}: {s}\n", .{ tuto.number, tuto.name });
+    } else {
+        const msg =
+            \\Tutorial number not provided.
+            \\
+            \\Usage:
+            \\zig build run -Dn=<tutorial_number>
+        ;
+        print("{s}\n\nAvailable tutorials: 1 - {d}\n", .{ msg, tutorials.len });
         std.os.exit(2);
     }
 
-    const tuto = tutorials[tutono - 1];
-    const tutorial_path = tuto.main_file;
-    print("Running tutorial {d}: {s}", .{ tuto.number, tuto.name });
+    if (tutorial_path == null) {
+        print("Unable to locate the tutorial", .{});
+    }
 
     const exe = b.addExecutable(.{
         .name = "learnzigopengl",
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
-        .root_source_file = .{ .path = tutorial_path },
+        .root_source_file = .{ .path = tutorial_path orelse unreachable },
         .target = target,
         .optimize = optimize,
     });
