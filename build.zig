@@ -23,8 +23,6 @@ pub fn build(b: *std.Build) void {
         print("Selected Tutorial {d}: {s}\n", .{ tuto.number, tuto.name });
     } else {
         const msg =
-            \\Tutorial number not provided.
-            \\
             \\Usage:
             \\zig build run -Dn=<tutorial_number>
         ;
