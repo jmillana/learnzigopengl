@@ -103,4 +103,9 @@ const tutorials = [_]Tutorial{
         .main_file = "src/tutorial_2/triangles_2.zig",
         .number = 3,
     },
+    .{
+        .name = "Shaders with Uniform",
+        .main_file = "src/tutorial_3/shaders.zig",
+        .number = 4,
+    },
 };
