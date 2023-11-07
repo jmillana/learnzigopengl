@@ -98,4 +98,9 @@ const tutorials = [_]Tutorial{
         .main_file = "src/tutorial_2/triangle.zig",
         .number = 2,
     },
+    .{
+        .name = "Draw 2 triangles",
+        .main_file = "src/tutorial_2/triangles_2.zig",
+        .number = 3,
+    },
 };
