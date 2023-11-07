@@ -15,7 +15,6 @@ fn errorCallback(error_code: glfw.ErrorCode, description: [:0]const u8) void {
 }
 
 pub fn main() !void {
-    // This block is the same as Tutorial 1
     glfw.setErrorCallback(errorCallback);
     if (!glfw.init(.{})) {
         std.log.err("ERROR::GLFW::INITIALIZATION_FAILED: {?s}", .{glfw.getErrorString()});
@@ -82,14 +81,6 @@ pub fn main() !void {
         std.log.debug("DEBUG::SHADER::FRAGMEN::LINKING_SUCCESS\n{s}", .{logInfo[0..i]});
     }
 
-    // Shader Program
-    // The final linked version of multiple shaders combined. To use the combenid
-    // shaders we have to link them to the shader program object and then activate
-    // it when rendering oblects.
-    //
-    // When linking the shaders, it links the outputs of each shader to the inputs
-    // of the next shader. Also it will link errors if the outputs and inputs
-    // do not match
     var shaderProgram: gl.GLuint = gl.createProgram();
     gl.attachShader(shaderProgram, vertexShader);
     gl.attachShader(shaderProgram, fragmentShader);
@@ -121,17 +112,19 @@ pub fn main() !void {
         std.process.exit(1);
     }
 
-    // Time for triangles.
+    // Now lets describe a set of vertices
+    // We pick the union of the vertices of both triangles
     const vertices = [_]gl.GLfloat{
         // Triangle 1
-        -0.5, -0.5, 0.0, // top right
+        0.5, 0.5, 0.0, // top right
         0.5, -0.5, 0.0, // bottom right
-        0.0, 0.5, 0.0, // top left
+        // -0.5, 0.5, 0.0, // top left
         // Triangle 2
         // 0.5,  -0.5, 0.0, // bottom right
         -0.5, -0.5, 0.0, // bottom left
-        // -0.5, 0.5,  0.0, // top left
+        -0.5, 0.5, 0.0, // top left
     };
+    // Pich the indeces to build each triangle.
     const indices = [_]gl.GLuint{
         0, 1, 3, // fist triangle
         1, 2, 3, // second triangle
@@ -176,9 +169,8 @@ pub fn main() !void {
         std.process.exit(1);
     }
 
-    // Wait for the user to close the window.
-    // The main rendering loop remains the same, we will be adding the
-    // rendering of the triangle in between
+    // Uncoment to draw in wireframe mode
+    // gl.polygonMode(gl.FRONT_AND_BACK, gl.LINE);
     while (!window.shouldClose()) {
         glfw.pollEvents();
 
@@ -196,7 +188,6 @@ pub fn main() !void {
             std.log.err("ERROR::VAO::BINDING_FAILED: errno: {d}", .{err});
         }
         // Call to the propper draw method
-        // gl.drawArrays(gl.TRIANGLES, 0, 3);
         gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
         err = gl.getError();
         if (err != gl.NO_ERROR) {
