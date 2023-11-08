@@ -20,7 +20,7 @@ pub fn build(b: *std.Build) void {
         }
         const tuto = tutorials[n - 1];
         tutorial_path = tuto.main_file;
-        print("Selected Tutorial {d}: {s}\n", .{ tuto.number, tuto.name });
+        print("Selected Tutorial {d}: {s}\n", .{ n, tuto.name });
     } else {
         const msg =
             \\Usage:
@@ -84,28 +84,31 @@ pub fn build(b: *std.Build) void {
 const Tutorial = struct {
     name: []const u8,
     main_file: []const u8,
-    number: usize,
 };
 
 const tutorials = [_]Tutorial{
     .{
         .name = "Build a window",
         .main_file = "src/tutorial_1/window.zig",
-        .number = 1,
     },
     .{
         .name = "Draw a triangle",
-        .main_file = "src/tutorial_2/triangle.zig",
-        .number = 2,
+        .main_file = "src/tutorial_2/2_1_triangle.zig",
     },
     .{
         .name = "Draw 2 triangles",
-        .main_file = "src/tutorial_2/triangles_2.zig",
-        .number = 3,
+        .main_file = "src/tutorial_2/2_2_triangles.zig",
     },
     .{
         .name = "Shaders with Uniform",
-        .main_file = "src/tutorial_3/shaders.zig",
-        .number = 4,
+        .main_file = "src/tutorial_3/3_1_shaders.zig",
+    },
+    .{
+        .name = "Shaders with Uniform",
+        .main_file = "src/tutorial_3/3_2_shaders.zig",
+    },
+    .{
+        .name = "Custom shader builder",
+        .main_file = "src/3_3_shader_object.zig",
     },
 };
