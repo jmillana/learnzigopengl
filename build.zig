@@ -39,6 +39,7 @@ pub fn build(b: *std.Build) void {
         // In this case the main source file is merely a path, however, in more
         // complicated build scripts, this could be a generated file.
         .root_source_file = .{ .path = tutorial_path orelse unreachable },
+        .main_mod_path = .{ .path = "src/" },
         .target = target,
         .optimize = optimize,
     });
@@ -89,26 +90,26 @@ const Tutorial = struct {
 const tutorials = [_]Tutorial{
     .{
         .name = "Build a window",
-        .main_file = "src/tutorial_1/window.zig",
+        .main_file = "src/1_getting_started/1_hello_window/hello_window.zig",
     },
     .{
         .name = "Draw a triangle",
-        .main_file = "src/tutorial_2/2_1_triangle.zig",
+        .main_file = "src/1_getting_started/2_hello_triangle/1_hello_triangle.zig",
     },
     .{
         .name = "Draw 2 triangles",
-        .main_file = "src/tutorial_2/2_2_triangles.zig",
+        .main_file = "src/1_getting_started/2_hello_triangle/2_hello_triangle_indexed.zig",
     },
     .{
         .name = "Shaders with Uniform",
-        .main_file = "src/tutorial_3/3_1_shaders.zig",
+        .main_file = "src/1_getting_started/3_shaders/1_uniform.zig",
     },
     .{
         .name = "Shaders with Uniform",
-        .main_file = "src/tutorial_3/3_2_shaders.zig",
+        .main_file = "src/1_getting_started/3_shaders/2_shaders_interpolation.zig",
     },
     .{
         .name = "Custom shader builder",
-        .main_file = "src/3_3_shader_object.zig",
+        .main_file = "src/1_getting_started/3_shaders/3_shaders_class.zig",
     },
 };
