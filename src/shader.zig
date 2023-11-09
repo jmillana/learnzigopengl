@@ -11,7 +11,6 @@ pub const Shader = struct {
         vertex_path: []const u8,
         fragment_path: []const u8,
     ) !Shader {
-        std.debug.print("\n\ncwd: {any}\n\n", .{fs.cwd()});
         const v_shader_file = try fs.cwd().openFile(
             vertex_path,
             .{ .mode = .read_only },
@@ -88,24 +87,24 @@ fn checkCompileErrors(
 ) void {
     var success: gl.GLint = 0;
     var info_log: [1024]u8 = undefined;
-    std.debug.print("Checking shader: {d} - {s}\n", .{ shader, shader_type.str() });
     switch (shader_type) {
         .PROGRAM => {
-            gl.getProgramiv(shader, gl.COMPILE_STATUS, &success);
-            if (success == 0) {
-                gl.getShaderInfoLog(shader, 1024, null, &info_log);
-                std.log.err(
-                    "ERROR::SHADER::{s}::COMPILATION_FAILED\n{s}",
-                    .{ shader_type.str(), info_log },
-                );
-            }
-        },
-        else => {
             gl.getProgramiv(shader, gl.LINK_STATUS, &success);
             if (success == 0) {
                 gl.getShaderInfoLog(shader, 1024, null, &info_log);
                 std.log.err(
-                    "ERROR::SHADER::{s}::LINKING_FAILED\n{s}",
+                    "ERROR::SHADER::{s}::LINKING_FAILED\n{?s}",
+                    .{ shader_type.str(), info_log },
+                );
+                return;
+            }
+        },
+        else => {
+            gl.getShaderiv(shader, gl.COMPILE_STATUS, &success);
+            if (success == 0) {
+                gl.getShaderInfoLog(shader, 1024, null, &info_log);
+                std.log.err(
+                    "ERROR::SHADER::{s}::COMPILATION_FAILED\n{?s}",
                     .{ shader_type.str(), info_log },
                 );
             }

@@ -2,7 +2,7 @@ const std = @import("std");
 const glfw = @import("mach-glfw");
 const gl = @import("gl");
 const fs = std.fs;
-const Shader = @import("shader.zig").Shader;
+const Shader = @import("../../shader.zig").Shader;
 
 const log = std.log.scoped(.Engine);
 
@@ -39,11 +39,10 @@ pub fn main() !void {
     try gl.load(proc, glGetProcAddress);
     // END: Tutorial 1 block
     const allocator = std.heap.page_allocator;
-    const vertex_path = "src/tutorial_3/triangle2.vs";
-    const fragment_path = "src/tutorial_3/shader_2.fs";
+    const vertex_path = "src/shaders/3_2_shader.vs";
+    const fragment_path = "src/shaders/3_2_shader.fs";
 
     const shader = try Shader.init(allocator, vertex_path, fragment_path);
-    std.debug.print("Shader ID: {d}\n", .{shader.id});
 
     // Time for triangles.
     const vertices = [18]gl.GLfloat{

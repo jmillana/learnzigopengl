@@ -1,7 +1,7 @@
 const std = @import("std");
 const glfw = @import("mach-glfw");
 const gl = @import("gl");
-const math = std.math;
+const fs = std.fs;
 
 const log = std.log.scoped(.Engine);
 
@@ -16,7 +16,6 @@ fn errorCallback(error_code: glfw.ErrorCode, description: [:0]const u8) void {
 }
 
 pub fn main() !void {
-    // This block is the same as Tutorial 1
     glfw.setErrorCallback(errorCallback);
     if (!glfw.init(.{})) {
         std.log.err("ERROR::GLFW::INITIALIZATION_FAILED: {?s}", .{glfw.getErrorString()});
@@ -37,77 +36,55 @@ pub fn main() !void {
     glfw.makeContextCurrent(window);
     const proc: glfw.GLProc = undefined;
     try gl.load(proc, glGetProcAddress);
-    // END: Tutorial 1 block
 
-    // Time for triangles.
-    const vertices = [9]gl.GLfloat{
-        -0.5, -0.5, 0.0,
-        0.5,  -0.5, 0.0,
-        0.0,  0.5,  0.0,
-    };
-
-    // The Vertex Array Object
-    // The VAO stores the vertex atribute calls, in order to change between
-    // different vertex data and attrs configurations is as easy as binding
-    // to a defferent VAO
-    var VAO: gl.GLuint = undefined;
-    gl.genVertexArrays(1, &VAO);
-    gl.bindVertexArray(VAO);
-    // The Vertex Buffer Object
-    // The VBO object manages the GPU memory that will be used to allocate
-    // the vertices. This will be handy when we want to send large batches of
-    // data at once to the GPU.
-    var VBO: gl.GLuint = undefined;
-    gl.genBuffers(1, &VBO);
-    gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
-    // The bufferData function copies user-defined data into the boulnd buffer.
-    // With the STATIC_DRAW flag indicate that the data will be set only once
-    gl.bufferData(
-        gl.ARRAY_BUFFER,
-        vertices.len * @sizeOf(gl.GLfloat),
-        &vertices,
-        gl.STATIC_DRAW,
-    );
-    gl.vertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * @sizeOf(gl.GLfloat), null);
-    gl.enableVertexAttribArray(0);
-
-    var err = gl.getError();
-    if (err != gl.NO_ERROR) {
-        std.log.err("ERROR::VBO: errno: {d}", .{err});
-        std.process.exit(1);
-    }
-
+    // SHADERS
     // Vertex shader: more details inside the file.
-    const vertexShaderSource: [:0]const u8 = @embedFile("triangle.vs");
-    var vertexShader: gl.GLuint = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vertexShader, 1, &[_][*c]const u8{vertexShaderSource.ptr}, null);
-    gl.compileShader(vertexShader);
+    const allocator = std.heap.page_allocator;
+    const vertex_shader_file = try fs.cwd().openFile(
+        "src/shaders/2_1_shader.vs",
+        .{ .mode = .read_only },
+    );
+    defer vertex_shader_file.close();
+    const vertex_shader_source = try allocator.alloc(u8, try vertex_shader_file.getEndPos());
+    _ = try vertex_shader_file.read(vertex_shader_source);
+    defer allocator.free(vertex_shader_source);
+    var vertex_shader: gl.GLuint = gl.createShader(gl.VERTEX_SHADER);
+    const vertex_shader_source_ptr: ?[*]const u8 = vertex_shader_source.ptr;
+    gl.shaderSource(vertex_shader, 1, &vertex_shader_source_ptr, null);
+    gl.compileShader(vertex_shader);
     var success: gl.GLint = 0;
     // Check the compilation status.
-    gl.getShaderiv(vertexShader, gl.COMPILE_STATUS, &success);
+    gl.getShaderiv(vertex_shader, gl.COMPILE_STATUS, &success);
     if (success == 0) {
         var logInfo: [512]u8 = undefined;
         var logSize: gl.GLint = 0;
         var i: usize = @intCast(logSize);
-        gl.getShaderInfoLog(vertexShader, 512, &logSize, &logInfo);
+        gl.getShaderInfoLog(vertex_shader, 512, &logSize, &logInfo);
         std.log.err("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n{?s}", .{logInfo[0..i]});
         std.process.exit(1);
     } else {
         var logInfo: [512]u8 = undefined;
         var logSize: gl.GLint = 0;
         var i: usize = @intCast(logSize);
-        gl.getShaderInfoLog(vertexShader, 512, &logSize, &logInfo);
-        std.log.debug("DEBUG::SHADER::VERTEX::LINKING_SUCCESS\n{s}", .{logInfo[0..i]});
+        gl.getShaderInfoLog(vertex_shader, 512, &logSize, &logInfo);
+        std.log.debug("DEBUG::SHADER::VERTEX::COMPILATION_SUCCESS\n{s}", .{logInfo[0..i]});
     }
 
     // Fragment shader
-    const fragmentShaderSource: [:0]const u8 = @embedFile("uniform_shader.fs");
-    var fragmentShader: gl.GLuint = gl.createShader(gl.FRAGMENT_SHADER);
-
-    gl.shaderSource(fragmentShader, 1, &[_][*c]const u8{fragmentShaderSource.ptr}, null);
-    gl.compileShader(fragmentShader);
+    const fragment_shader_file = try fs.cwd().openFile(
+        "src/shaders/2_1_shader.fs",
+        .{ .mode = .read_only },
+    );
+    defer fragment_shader_file.close();
+    const fragment_shader_source = try allocator.alloc(u8, try fragment_shader_file.getEndPos());
+    _ = try fragment_shader_file.read(fragment_shader_source);
+    defer allocator.free(fragment_shader_source);
+    var fragment_shader: gl.GLuint = gl.createShader(gl.FRAGMENT_SHADER);
+    const fragment_shader_source_ptr: ?[*]const u8 = fragment_shader_source.ptr;
+    gl.shaderSource(fragment_shader, 1, &fragment_shader_source_ptr, null);
+    gl.compileShader(fragment_shader);
     // Check the compilation status
-    gl.getShaderiv(fragmentShader, gl.COMPILE_STATUS, &success);
+    gl.getShaderiv(fragment_shader, gl.COMPILE_STATUS, &success);
     if (success == 0) {
         var logInfo: [512]u8 = undefined;
         var logSize: gl.GLint = 0;
@@ -118,13 +95,13 @@ pub fn main() !void {
         var logInfo: [512]u8 = undefined;
         var logSize: gl.GLint = 0;
         var i: usize = @intCast(logSize);
-        std.log.debug("DEBUG::SHADER::FRAGMEN::LINKING_SUCCESS\n{s}", .{logInfo[0..i]});
+        std.log.debug("DEBUG::SHADER::FRAGMEN::COMPILATION_SUCCESS\n{s}", .{logInfo[0..i]});
     }
 
     var shaderProgram: gl.GLuint = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    err = gl.getError();
+    gl.attachShader(shaderProgram, vertex_shader);
+    gl.attachShader(shaderProgram, fragment_shader);
+    var err = gl.getError();
     if (err != gl.NO_ERROR) {
         std.log.err("Failed to attach shaders: errno: {d}", .{err});
         std.process.exit(1);
@@ -144,26 +121,80 @@ pub fn main() !void {
         std.log.debug("DEBUG::SHADER::PROGRAM::LINKING_SUCCESS\n{s}", .{logInfo[0..i]});
     }
     // After creating the program the shadres are no longer used
-    gl.deleteShader(vertexShader);
-    gl.deleteShader(fragmentShader);
+    gl.deleteShader(vertex_shader);
+    gl.deleteShader(fragment_shader);
     err = gl.getError();
     if (err != gl.NO_ERROR) {
         std.log.err("ERROR::SHADER::DELETION_FAILED: errno: {d}", .{err});
         std.process.exit(1);
     }
 
+    // Now lets describe a set of vertices
+    // We pick the union of the vertices of both triangles
+    const vertices = [_]gl.GLfloat{
+        // Triangle 1
+        0.5, 0.5, 0.0, // top right
+        0.5, -0.5, 0.0, // bottom right
+        // -0.5, 0.5, 0.0, // top left
+        // Triangle 2
+        // 0.5,  -0.5, 0.0, // bottom right
+        -0.5, -0.5, 0.0, // bottom left
+        -0.5, 0.5, 0.0, // top left
+    };
+    // Pich the indeces to build each triangle.
+    const indices = [_]gl.GLuint{
+        0, 1, 3, // fist triangle
+        1, 2, 3, // second triangle
+    };
+    var VAO: gl.GLuint = undefined;
+    var VBO: gl.GLuint = undefined;
+    var EBO: gl.GLuint = undefined;
+    gl.genVertexArrays(1, &VAO);
+    defer gl.deleteBuffers(1, &VAO);
+    gl.genBuffers(1, &VBO);
+    defer gl.deleteBuffers(1, &VBO);
+    gl.genBuffers(1, &EBO);
+    defer gl.deleteBuffers(1, &EBO);
+
+    gl.bindVertexArray(VAO);
+    gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
+    gl.bufferData(
+        gl.ARRAY_BUFFER,
+        vertices.len * @sizeOf(gl.GLfloat),
+        &vertices,
+        gl.STATIC_DRAW,
+    );
+
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, EBO);
+    gl.bufferData(
+        gl.ELEMENT_ARRAY_BUFFER,
+        @sizeOf(gl.GLuint) * indices.len,
+        &indices,
+        gl.STATIC_DRAW,
+    );
+
+    // Set the vertex attrs to pinters
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * @sizeOf(gl.GLfloat), null);
+    gl.enableVertexAttribArray(0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, 0);
+    gl.bindVertexArray(0);
+
+    err = gl.getError();
+    if (err != gl.NO_ERROR) {
+        std.log.err("ERROR::VBO: errno: {d}", .{err});
+        std.process.exit(1);
+    }
+
+    // Uncoment to draw in wireframe mode
+    // gl.polygonMode(gl.FRONT_AND_BACK, gl.LINE);
     while (!window.shouldClose()) {
         glfw.pollEvents();
 
         gl.clearColor(1, 0, 1, 1);
         gl.clear(gl.COLOR_BUFFER_BIT);
 
-        var time: gl.GLfloat = @floatCast(glfw.getTime());
-
-        var green_value: gl.GLfloat = (math.sin(time) / 2) + 0.5;
-        var vertex_color_locaton = gl.getUniformLocation(shaderProgram, "ourColor");
         gl.useProgram(shaderProgram);
-        gl.uniform4f(vertex_color_locaton, 0, green_value, 0, 1);
         err = gl.getError();
         if (err != gl.NO_ERROR) {
             std.log.err("ERROR::SHADER::PROGRAM::USE_FAILED: errno: {d}", .{err});
@@ -174,7 +205,7 @@ pub fn main() !void {
             std.log.err("ERROR::VAO::BINDING_FAILED: errno: {d}", .{err});
         }
         // Call to the propper draw method
-        gl.drawArrays(gl.TRIANGLES, 0, 3);
+        gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, null);
         err = gl.getError();
         if (err != gl.NO_ERROR) {
             std.log.err("ERROR::DRAW::ARRAYS::FAILED_TO_DRAW: errno: {d}", .{err});

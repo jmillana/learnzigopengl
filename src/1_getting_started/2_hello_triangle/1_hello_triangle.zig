@@ -1,6 +1,7 @@
 const std = @import("std");
 const glfw = @import("mach-glfw");
 const gl = @import("gl");
+const fs = std.fs;
 
 const log = std.log.scoped(.Engine);
 
@@ -77,36 +78,53 @@ pub fn main() !void {
     }
 
     // Vertex shader: more details inside the file.
-    const vertexShaderSource: [:0]const u8 = @embedFile("triangle.vs");
-    var vertexShader: gl.GLuint = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vertexShader, 1, &[_][*c]const u8{vertexShaderSource.ptr}, null);
-    gl.compileShader(vertexShader);
+    const allocator = std.heap.page_allocator;
+    const vertex_shader_file = try fs.cwd().openFile(
+        "src/shaders/2_1_shader.vs",
+        .{ .mode = .read_only },
+    );
+    defer vertex_shader_file.close();
+    const vertex_shader_source = try allocator.alloc(u8, try vertex_shader_file.getEndPos());
+    _ = try vertex_shader_file.read(vertex_shader_source);
+    defer allocator.free(vertex_shader_source);
+    var vertex_shader: gl.GLuint = gl.createShader(gl.VERTEX_SHADER);
+    const vertex_shader_source_ptr: ?[*]const u8 = vertex_shader_source.ptr;
+    gl.shaderSource(vertex_shader, 1, &vertex_shader_source_ptr, null);
+    gl.compileShader(vertex_shader);
     var success: gl.GLint = 0;
     // Check the compilation status.
-    gl.getShaderiv(vertexShader, gl.COMPILE_STATUS, &success);
+    gl.getShaderiv(vertex_shader, gl.COMPILE_STATUS, &success);
     if (success == 0) {
         var logInfo: [512]u8 = undefined;
         var logSize: gl.GLint = 0;
         var i: usize = @intCast(logSize);
-        gl.getShaderInfoLog(vertexShader, 512, &logSize, &logInfo);
+        gl.getShaderInfoLog(vertex_shader, 512, &logSize, &logInfo);
         std.log.err("ERROR::SHADER::VERTEX::COMPILATION_FAILED\n{?s}", .{logInfo[0..i]});
         std.process.exit(1);
     } else {
         var logInfo: [512]u8 = undefined;
         var logSize: gl.GLint = 0;
         var i: usize = @intCast(logSize);
-        gl.getShaderInfoLog(vertexShader, 512, &logSize, &logInfo);
-        std.log.debug("DEBUG::SHADER::VERTEX::LINKING_SUCCESS\n{s}", .{logInfo[0..i]});
+        gl.getShaderInfoLog(vertex_shader, 512, &logSize, &logInfo);
+        std.log.debug("DEBUG::SHADER::VERTEX::COMPILATION_SUCCESS\n{s}", .{logInfo[0..i]});
     }
 
     // Fragment shader
-    const fragmentShaderSource: [:0]const u8 = @embedFile("triangle.fs");
-    var fragmentShader: gl.GLuint = gl.createShader(gl.FRAGMENT_SHADER);
+    const fragment_shader_file = try fs.cwd().openFile(
+        "src/shaders/2_1_shader.fs",
+        .{ .mode = .read_only },
+    );
+    defer fragment_shader_file.close();
+    const fragment_shader_source = try allocator.alloc(u8, try fragment_shader_file.getEndPos());
+    _ = try fragment_shader_file.read(fragment_shader_source);
+    defer allocator.free(fragment_shader_source);
+    var fragment_shader: gl.GLuint = gl.createShader(gl.FRAGMENT_SHADER);
+    const fragment_shader_source_ptr: ?[*]const u8 = fragment_shader_source.ptr;
+    gl.shaderSource(fragment_shader, 1, &fragment_shader_source_ptr, null);
 
-    gl.shaderSource(fragmentShader, 1, &[_][*c]const u8{fragmentShaderSource.ptr}, null);
-    gl.compileShader(fragmentShader);
+    gl.compileShader(fragment_shader);
     // Check the compilation status
-    gl.getShaderiv(fragmentShader, gl.COMPILE_STATUS, &success);
+    gl.getShaderiv(fragment_shader, gl.COMPILE_STATUS, &success);
     if (success == 0) {
         var logInfo: [512]u8 = undefined;
         var logSize: gl.GLint = 0;
@@ -117,7 +135,7 @@ pub fn main() !void {
         var logInfo: [512]u8 = undefined;
         var logSize: gl.GLint = 0;
         var i: usize = @intCast(logSize);
-        std.log.debug("DEBUG::SHADER::FRAGMEN::LINKING_SUCCESS\n{s}", .{logInfo[0..i]});
+        std.log.debug("DEBUG::SHADER::FRAGMEN::COMPILATION_SUCCESS\n{s}", .{logInfo[0..i]});
     }
 
     // Shader Program
@@ -129,8 +147,8 @@ pub fn main() !void {
     // of the next shader. Also it will link errors if the outputs and inputs
     // do not match
     var shaderProgram: gl.GLuint = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
+    gl.attachShader(shaderProgram, vertex_shader);
+    gl.attachShader(shaderProgram, fragment_shader);
     err = gl.getError();
     if (err != gl.NO_ERROR) {
         std.log.err("Failed to attach shaders: errno: {d}", .{err});
@@ -151,8 +169,8 @@ pub fn main() !void {
         std.log.debug("DEBUG::SHADER::PROGRAM::LINKING_SUCCESS\n{s}", .{logInfo[0..i]});
     }
     // After creating the program the shadres are no longer used
-    gl.deleteShader(vertexShader);
-    gl.deleteShader(fragmentShader);
+    gl.deleteShader(vertex_shader);
+    gl.deleteShader(fragment_shader);
     err = gl.getError();
     if (err != gl.NO_ERROR) {
         std.log.err("ERROR::SHADER::DELETION_FAILED: errno: {d}", .{err});
