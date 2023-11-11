@@ -2,6 +2,7 @@ const std = @import("std");
 const print = std.debug.print;
 
 const OPENGL_BINDINGS_PATH = "libs/gl4v6.zig";
+const zstbi = @import("libs/zstbi/build.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -57,6 +58,9 @@ pub fn build(b: *std.Build) void {
         .source_file = .{ .path = OPENGL_BINDINGS_PATH },
     }));
 
+    const zstbi_pkg = zstbi.package(b, target, optimize, .{});
+    zstbi_pkg.link(exe);
+
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
@@ -111,5 +115,9 @@ const tutorials = [_]Tutorial{
     .{
         .name = "Custom shader builder",
         .main_file = "src/1_getting_started/3_shaders/3_shaders_class.zig",
+    },
+    .{
+        .name = "Textures",
+        .main_file = "src/1_getting_started/4_textures/1_textures.zig",
     },
 };
