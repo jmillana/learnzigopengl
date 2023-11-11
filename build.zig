@@ -120,4 +120,8 @@ const tutorials = [_]Tutorial{
         .name = "Textures",
         .main_file = "src/1_getting_started/4_textures/1_textures.zig",
     },
+    .{
+        .name = "Textures mix",
+        .main_file = "src/1_getting_started/4_textures/2_mix_textures.zig",
+    },
 };
